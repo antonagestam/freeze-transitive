@@ -6,6 +6,7 @@ import sys
 from collections.abc import Iterable
 from collections.abc import Iterator
 from pathlib import Path
+from sqlite3 import Cursor
 
 import yaml
 
@@ -15,13 +16,19 @@ from .schema import FQN
 from .schema import Hook
 from .schema import Repo
 from .schema import Result
+from functools import cache
+
+
+@cache
+def get_database_cursor() -> Cursor:
+    path = (Path.home() / ".cache/pre-commit/db.db").resolve()
+    connection = sqlite3.connect(str(path))
+    return connection.cursor()
 
 
 def get_repo_path(fqn: FQN, revision: str) -> Path:
-    path = (Path.home() / ".cache/pre-commit/db.db").resolve()
-    con = sqlite3.connect(str(path))
-    cur = con.cursor()
-    res = cur.execute(
+    cursor = get_database_cursor()
+    result = cursor.execute(
         """\
         SELECT path FROM repos
         WHERE repo = ? AND ref = ?
@@ -29,12 +36,12 @@ def get_repo_path(fqn: FQN, revision: str) -> Path:
         """,
         (fqn, revision),
     )
-    (path,) = res.fetchone()
+    (path,) = result.fetchone()
     return Path(path)
 
 
 def read_configured_repos() -> Iterator[Repo]:
-    path = (Path().home() / "projects/phantom-types/.pre-commit-config.yaml").resolve()
+    path = (Path.cwd() / ".pre-commit-config.yaml").resolve()
     parsed = yaml.load(path.read_text(), Loader=yaml.CLoader)
     repos = parsed.get("repos", None)
     if not repos or not isinstance(repos, Iterable):
