@@ -1,11 +1,25 @@
 import sys
 
+from typing_extensions import assert_never
+
 from freeze_transitive.errors import UserError
-from .fetch import main
 
+from . import api
+from .schema import Result
 
-try:
-    main()
-except UserError as exc:
-    print(f"{exc.__class__.__qualname__}: {exc}", file=sys.stderr)
-    exit(1)
+if __name__ == "__main__":
+    try:
+        result = api.main()
+    except UserError as exc:
+        print(f"{exc.__class__.__qualname__}: {exc}", file=sys.stderr)
+        result = Result.ERROR
+
+    match result:
+        case Result.PASSING:
+            pass
+        case Result.FAILING:
+            exit(1)
+        case Result.ERROR:
+            exit(2)
+        case not_exhaustive:
+            assert_never(not_exhaustive)

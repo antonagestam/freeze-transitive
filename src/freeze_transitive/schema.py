@@ -1,23 +1,28 @@
-from collections.abc import Sequence, Mapping, Iterator
+import enum
+from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import NewType
+from typing import TypeVar
 
-from typing_extensions import Self
-
-from .parsers import take, take_sequence, parse
-
+from .parsers import parse
+from .parsers import take
+from .parsers import take_sequence
 
 FQN = NewType("FQN", str)
 
+# TODO: Use typing_extensions.Self when implemented in mypy.
+HookSelf = TypeVar("HookSelf", bound="Hook")
+RepoSelf = TypeVar("RepoSelf", bound="Repo")
+
 
 @dataclass(frozen=True, slots=True)
-class ConfiguredHook:
+class Hook:
     id: str
     additional_dependencies: Sequence[str]
 
     @classmethod
-    def parse(cls, unknown: object) -> Self:
-        data = parse(unknown, Mapping)
+    def parse(cls: type[HookSelf], unknown: object) -> HookSelf:
+        data = parse(unknown, dict)
         return cls(
             id=take(data, str, "id"),
             additional_dependencies=take_sequence(data, str, "additional_dependencies"),
@@ -31,27 +36,24 @@ class ConfiguredHook:
 
 
 @dataclass(frozen=True, slots=True)
-class ConfiguredRepo:
+class Repo:
     repo: str
     rev: str
-    hooks: Sequence[ConfiguredHook]
+    hooks: Sequence[Hook]
 
     @classmethod
-    def parse(cls, unknown: object) -> Self:
-        data = parse(unknown, Mapping)
-        hooks_data = take(data, Sequence, "hooks")
+    def parse(cls: type[RepoSelf], unknown: object) -> RepoSelf:
+        data = parse(unknown, dict)
+        hooks_data = take(data, list, "hooks")
         return cls(
             repo=take(data, str, "repo"),
             rev=take(data, str, "rev"),
-            hooks=tuple(ConfiguredHook.parse(hook_data) for hook_data in hooks_data),
+            hooks=tuple(Hook.parse(hook_data) for hook_data in hooks_data),
         )
 
-    def repository_ids(self) -> Iterator[str]:
-        seen = set()
-        for hook in self.hooks:
-            dependencies = hook.join_dependencies()
-            fully_qualified = ":".join((self.repo, dependencies)) if dependencies else self.repo
-            if fully_qualified in seen:
-                continue
-            seen.add(fully_qualified)
-            yield fully_qualified
+
+@enum.unique
+class Result(enum.Enum):
+    PASSING = enum.auto()
+    FAILING = enum.auto()
+    ERROR = enum.auto()

@@ -1,7 +1,9 @@
+from collections.abc import Mapping
 from collections.abc import Sequence
-from typing import TypeVar, Mapping
+from typing import TypeVar
 
-from .errors import ConfigError, MissingKey
+from .errors import ConfigError
+from .errors import MissingKey
 
 T = TypeVar("T")
 
@@ -20,7 +22,12 @@ def take(data: Mapping[object, object], type_: type[T], key: str) -> T:
     return parse(value, type_)
 
 
-def take_sequence(data: Mapping[object, object], type_: type[T], key: str, missing_as_empty: bool = True, ) -> tuple[T, ...]:
+def take_sequence(
+    data: Mapping[object, object],
+    type_: type[T],
+    key: str,
+    missing_as_empty: bool = True,
+) -> tuple[T, ...]:
     try:
         sequence = data[key]
     except KeyError as exc:
