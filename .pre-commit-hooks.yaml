@@ -1,5 +1,5 @@
 - id: freeze-transitive
-  name: freeze-transitive
+  name: freeze transitive pre-commit dependencies
   description: "Freeze transitive pre-commit dependencies in Python hooks."
   entry: python3 -m freeze_transitive
   language: python
