@@ -1,0 +1,8 @@
+- id: freeze-transitive
+  name: freeze-transitive
+  description: "Freeze transitive pre-commit dependencies in Python hooks."
+  entry: python3 -m freeze_transitive
+  language: python
+  language_version: 3.10
+  pass_filenames: false
+  require_serial: true

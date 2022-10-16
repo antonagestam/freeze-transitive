@@ -49,8 +49,7 @@ def get_repo_path(fqn: FQN, revision: str) -> Path:
 ParsedConfig = NewType("ParsedConfig", dict[object, object])
 
 
-def parse_config() -> ParsedConfig:
-    path = (Path.cwd() / ".pre-commit.yaml").resolve()
+def parse_config(path: Path) -> ParsedConfig:
     return ParsedConfig(parse(yaml.load(path.read_text(), Loader=yaml.CLoader), dict))
 
 
@@ -189,12 +188,13 @@ def write_config(config: ParsedConfig, outfile: TextIO) -> None:
     yaml.dump(config, outfile)
 
 
-def main(outfile: TextIO | None) -> Result:
+def main(outfile_path: Path | None, infile_path: Path) -> Result:
     result = Result.PASSING
-    config = parse_config()
+    config = parse_config(infile_path)
     operations = tuple(generate_operations(config))
 
-    if outfile is not None:
-        write_config(update_config(config, operations), outfile)
+    if outfile_path is not None:
+        with outfile_path.open("w") as outfile:
+            write_config(update_config(config, operations), outfile)
 
     return result

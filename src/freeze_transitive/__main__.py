@@ -12,11 +12,11 @@ from .schema import Result
 parser = argparse.ArgumentParser(
     description="Freeze transitive pre-commit dependencies in Python hooks.",
 )
-# parser.add_argument(
-#     "--stdout",
-#     action="store_true",
-#     help="Write locked file to stdout",
-# )
+parser.add_argument(
+    "--infile",
+    type=Path,
+    default=Path.cwd() / ".pre-commit-template.yaml",
+)
 parser.add_argument(
     "--outfile",
     type=Path,
@@ -27,13 +27,13 @@ parser.add_argument(
 if __name__ == "__main__":
     args = parser.parse_args()
     outfile_path: Path = args.outfile.resolve()
+    infile_path: Path = args.infile.resolve()
 
-    with args.outfile.open("w") as outfile:
-        try:
-            result = api.main(outfile=outfile)
-        except UserError as exc:
-            print(f"{exc.__class__.__qualname__}: {exc}", file=sys.stderr)
-            result = Result.ERROR
+    try:
+        result = api.main(outfile_path, infile_path)
+    except UserError as exc:
+        print(f"{exc.__class__.__qualname__}: {exc}", file=sys.stderr)
+        result = Result.ERROR
 
     match result:
         case Result.PASSING:
