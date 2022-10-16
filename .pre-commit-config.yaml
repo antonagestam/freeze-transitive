@@ -129,3 +129,12 @@ repos:
     id: check-manifest
   repo: https://github.com/mgedmin/check-manifest
   rev: '0.48'
+- hooks:
+  - additional_dependencies:
+    - PyYAML==6.0
+    - typing_extensions==4.4.0
+    args:
+    - --exclude-dependency=freeze-transitive
+    id: freeze-transitive
+  repo: https://github.com/antonagestam/freeze-transitive
+  rev: f5de455363238bf70e8bcc7a9d3ad4f5fb38d155

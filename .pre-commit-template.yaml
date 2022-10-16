@@ -92,3 +92,10 @@ repos:
         args: ["--no-build-isolation"]
         additional_dependencies:
           - setuptools==65.5.0
+
+  - repo: https://github.com/antonagestam/freeze-transitive
+    rev: "f5de455363238bf70e8bcc7a9d3ad4f5fb38d155"
+    hooks:
+      - id: freeze-transitive
+        args:
+          - --exclude-dependency=freeze-transitive
