@@ -10,7 +10,7 @@ from .parsers import take_sequence
 
 FQN = NewType("FQN", str)
 
-# TODO: Use typing_extensions.Self when implemented in mypy.
+# todo: Use typing_extensions.Self when implemented in mypy.
 HookSelf = TypeVar("HookSelf", bound="Hook")
 RepoSelf = TypeVar("RepoSelf", bound="Repo")
 
@@ -57,3 +57,10 @@ class Result(enum.Enum):
     PASSING = enum.auto()
     FAILING = enum.auto()
     ERROR = enum.auto()
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class Append:
+    repo: Repo
+    hook: Hook
+    value: str

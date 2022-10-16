@@ -1,94 +1,118 @@
+# Note! This is an auto-generated file, do not make manual edits here.
 default_language_version:
   python: python3.10
-
 repos:
-  - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: "v4.3.0"
-    hooks:
-      - id: check-case-conflict
-      - id: check-merge-conflict
-      - id: end-of-file-fixer
-      - id: trailing-whitespace
-      - id: debug-statements
-      - id: detect-private-key
-
-  - repo: https://github.com/editorconfig-checker/editorconfig-checker.python
-    rev: "2.6.1"
-    hooks:
-      - id: editorconfig-checker
-        alias: ec
-        args:
-          - -disable-indent-size
-
-  - repo: https://github.com/asottile/pyupgrade
-    rev: "v3.0.0"
-    hooks:
-      - id: pyupgrade
-        args:
-          - --py310-plus
-
-  - repo: https://github.com/pycqa/autoflake
-    rev: "v1.7.1"
-    hooks:
-      - id: autoflake
-        args:
-          - --in-place
-          - --remove-all-unused-imports
-          - --ignore-init-module-imports
-
-  - repo: https://github.com/pycqa/isort
-    rev: "5.10.1"
-    hooks:
-      - id: isort
-
-  - repo: https://github.com/psf/black
-    rev: "22.10.0"
-    hooks:
-      - id: black
-
-  - repo: https://github.com/asottile/blacken-docs
-    rev: "v1.12.1"
-    hooks:
-      - id: blacken-docs
-        additional_dependencies:
-          - "black==22.10.0"
-
-  - repo: https://gitlab.com/pycqa/flake8
-    rev: "3.9.2"
-    hooks:
-      - id: flake8
-        additional_dependencies:
-          - flake8-bugbear
-          - flake8-comprehensions
-
-  - repo: https://github.com/sirosen/check-jsonschema
-    rev: "0.18.3"
-    hooks:
-      - id: check-github-workflows
-
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: "v0.982"
-    hooks:
-      - id: mypy
-        pass_filenames: false
-        additional_dependencies:
-          - types-PyYAML
-
-  - repo: https://github.com/pre-commit/mirrors-prettier
-    rev: "v2.7.1"
-    hooks:
-      - id: prettier
-        alias: format-markdown
-        types: [ markdown ]
-        args:
-          - --parser=markdown
-          - --print-width=88
-          - --prose-wrap=always
-
-  # - repo: https://github.com/mgedmin/check-manifest
-  #   rev: "0.48"
-  #   hooks:
-  #     - id: check-manifest
-  #       args: ["--no-build-isolation"]
-  #       additional_dependencies:
-  #         - setuptools==65.3.0
+- hooks:
+  - additional_dependencies:
+    - ruamel.yaml.clib==0.2.6
+    - ruamel.yaml==0.17.21
+    - tomli==2.0.1
+    id: check-case-conflict
+  - id: check-merge-conflict
+  - id: end-of-file-fixer
+  - id: trailing-whitespace
+  - id: debug-statements
+  - id: detect-private-key
+  repo: https://github.com/pre-commit/pre-commit-hooks
+  rev: v4.3.0
+- hooks:
+  - alias: ec
+    args:
+    - -disable-indent-size
+    id: editorconfig-checker
+  repo: https://github.com/editorconfig-checker/editorconfig-checker.python
+  rev: 2.6.1
+- hooks:
+  - additional_dependencies:
+    - tokenize-rt==5.0.0
+    args:
+    - --py310-plus
+    id: pyupgrade
+  repo: https://github.com/asottile/pyupgrade
+  rev: v3.0.0
+- hooks:
+  - additional_dependencies:
+    - pyflakes==2.5.0
+    - tomli==2.0.1
+    args:
+    - --in-place
+    - --remove-all-unused-imports
+    - --ignore-init-module-imports
+    id: autoflake
+  repo: https://github.com/pycqa/autoflake
+  rev: v1.7.1
+- hooks:
+  - id: isort
+  repo: https://github.com/pycqa/isort
+  rev: 5.10.1
+- hooks:
+  - additional_dependencies:
+    - click==8.1.3
+    - mypy-extensions==0.4.3
+    - pathspec==0.10.1
+    - platformdirs==2.5.2
+    - tomli==2.0.1
+    id: black
+  repo: https://github.com/psf/black
+  rev: 22.10.0
+- hooks:
+  - additional_dependencies:
+    - black==22.10.0
+    - click==8.1.3
+    - mypy-extensions==0.4.3
+    - pathspec==0.10.1
+    - platformdirs==2.5.2
+    - tomli==2.0.1
+    id: blacken-docs
+  repo: https://github.com/asottile/blacken-docs
+  rev: v1.12.1
+- hooks:
+  - additional_dependencies:
+    - attrs==22.1.0
+    - flake8-bugbear==22.9.11
+    - flake8-comprehensions==3.10.0
+    - mccabe==0.6.1
+    - pycodestyle==2.7.0
+    - pyflakes==2.3.1
+    id: flake8
+  repo: https://gitlab.com/pycqa/flake8
+  rev: 3.9.2
+- hooks:
+  - additional_dependencies:
+    - attrs==22.1.0
+    - certifi==2022.9.14
+    - charset-normalizer==2.1.1
+    - click==8.1.3
+    - identify==2.5.5
+    - idna==3.4
+    - jsonschema==4.16.0
+    - pyrsistent==0.18.1
+    - requests==2.28.1
+    - ruamel.yaml.clib==0.2.6
+    - ruamel.yaml==0.17.21
+    - urllib3==1.26.12
+    id: check-github-workflows
+  repo: https://github.com/sirosen/check-jsonschema
+  rev: 0.18.3
+- hooks:
+  - additional_dependencies:
+    - mypy-extensions==0.4.3
+    - mypy==0.982
+    - tomli==2.0.1
+    - types-PyYAML==6.0.12
+    - typing_extensions==4.4.0
+    id: mypy
+    pass_filenames: false
+  repo: https://github.com/pre-commit/mirrors-mypy
+  rev: v0.982
+- hooks:
+  - alias: format-markdown
+    args:
+    - --parser=markdown
+    - --print-width=88
+    - --prose-wrap=always
+    id: prettier
+    types:
+    - markdown
+  repo: https://github.com/pre-commit/mirrors-prettier
+  rev: v2.7.1
