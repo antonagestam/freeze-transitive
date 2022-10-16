@@ -3,8 +3,8 @@ from functools import cache
 from pathlib import Path
 from sqlite3 import Connection
 
-from freeze_transitive.errors import CacheMiss
 from freeze_transitive import __version__
+from freeze_transitive.errors import CacheMiss
 
 
 def _create_table(connection: Connection) -> None:
@@ -54,7 +54,7 @@ def read(key: str) -> str:
         WHERE version = ? AND key = ?
         LIMIT 1
         """,
-        (__version__, key,),
+        (__version__, key),
     )
     row = result.fetchone()
     if row is None:

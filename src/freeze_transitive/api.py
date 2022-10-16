@@ -8,10 +8,12 @@ import subprocess
 import sys
 from collections.abc import Iterable
 from collections.abc import Iterator
+from collections.abc import Sequence
 from functools import cache
 from pathlib import Path
 from sqlite3 import Cursor
-from typing import NewType, Sequence, Final
+from typing import Final
+from typing import NewType
 from typing import TextIO
 
 import yaml
@@ -23,9 +25,9 @@ from .errors import NoPython
 from .parsers import parse
 from .parsers import take
 from .schema import FQN
-from .schema import Replace
 from .schema import Checksum
 from .schema import Hook
+from .schema import Replace
 from .schema import Repo
 from .schema import Result
 
@@ -130,8 +132,8 @@ def generate_operations(
             dependency
             for dependency in pip_freeze(python_path)
             if (
-                exclude_dependency is not None
-                and not dependency.startswith(f"{exclude_dependency}=")
+                exclude_dependency is None
+                or not dependency.startswith(f"{exclude_dependency}=")
             )
         )
 
@@ -152,7 +154,10 @@ def index_dependencies(dependencies: Iterable[str]) -> dict[str, str]:
     }
 
 
-def merge_dependencies(first_hand: Sequence[str], frozen: Sequence[str]) -> Iterable[str]:
+def merge_dependencies(
+    first_hand: Sequence[str],
+    frozen: Sequence[str],
+) -> Iterable[str]:
     indexed_first_hand = index_dependencies(first_hand)
     indexed_frozen = index_dependencies(frozen)
 
@@ -194,10 +199,12 @@ def update_config(config: ParsedConfig, operations: Iterable[Replace]) -> Parsed
             )
 
         assert isinstance(hook, dict)
-        hook["additional_dependencies"] = sorted(merge_dependencies(
-            first_hand=hook.get("additional_dependencies", ()),
-            frozen=operation.dependencies
-        ))
+        hook["additional_dependencies"] = sorted(
+            merge_dependencies(
+                first_hand=hook.get("additional_dependencies", ()),
+                frozen=operation.dependencies,
+            )
+        )
 
     return config
 
@@ -225,8 +232,10 @@ def main(
     )
     state_checksum = f"{get_checksum(infile_path)}-{exclude_dependency=}"
 
-    if use_cache and outfile_pre_checksum and state_cache.compare(
-        outfile_pre_checksum, state_checksum
+    if (
+        use_cache
+        and outfile_pre_checksum
+        and state_cache.compare(outfile_pre_checksum, state_checksum)
     ):
         print(
             "Found cache match for current state, skipping processing", file=sys.stderr
@@ -243,7 +252,8 @@ def main(
         outfile_post_checksum = get_checksum(outfile_path)
 
         if outfile_pre_checksum == outfile_post_checksum:
-            state_cache.write(outfile_post_checksum, state_checksum)
+            if use_cache:
+                state_cache.write(outfile_post_checksum, state_checksum)
             return Result.PASSING
 
         return Result.FAILING
