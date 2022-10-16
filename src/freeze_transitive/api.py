@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import copy
+import hashlib
 import sqlite3
 import subprocess
 import sys
@@ -15,6 +16,7 @@ from typing import TextIO
 import yaml
 
 from .errors import ConfigError
+from .errors import LocalRepo
 from .errors import NoPython
 from .parsers import parse
 from .parsers import take
@@ -60,7 +62,10 @@ def read_configured_repos(config: ParsedConfig) -> Iterator[Repo]:
             "Missing, empty or malformed key `repos` in pre-commit config"
         )
     for repo_data in repos:
-        yield Repo.parse(repo_data)
+        try:
+            yield Repo.parse(repo_data)
+        except LocalRepo:
+            print("Skipping local repo", file=sys.stderr)
 
 
 def get_unique_hooks(config: ParsedConfig) -> Iterator[tuple[Repo, Hook, FQN]]:
@@ -144,8 +149,8 @@ def update_config(config: ParsedConfig, operations: Iterable[Append]) -> ParsedC
             repo = next(
                 repo
                 for repo in repos
-                if operation.repo.repo == take(repo, str, "repo")
-                and operation.repo.rev == take(repo, str, "rev")
+                if operation.repo.repo == repo.get("repo")
+                and operation.repo.rev == repo.get("rev")
             )
         except StopIteration:
             raise RuntimeError(
@@ -165,6 +170,8 @@ def update_config(config: ParsedConfig, operations: Iterable[Append]) -> ParsedC
                 f"{operation.repo.rev=} {operation.hook.id=}"
             )
 
+        # todo: Replace the Append operation with a Replace operation, no need to
+        #  respect dependencies already in additional_dependencies.
         assert isinstance(hook, dict)
         hook["additional_dependencies"] = [
             # Remove unpinned dependencies.
@@ -188,8 +195,17 @@ def write_config(config: ParsedConfig, outfile: TextIO) -> None:
     yaml.dump(config, outfile)
 
 
+Checksum = NewType("Checksum", str)
+
+
+def get_checksum(path: Path) -> Checksum:
+    return Checksum(hashlib.sha512(path.read_bytes()).hexdigest())
+
+
 def main(outfile_path: Path | None, infile_path: Path) -> Result:
-    result = Result.PASSING
+    outfile_pre_checksum = (
+        get_checksum(outfile_path) if outfile_path is not None else None
+    )
     config = parse_config(infile_path)
     operations = tuple(generate_operations(config))
 
@@ -197,4 +213,12 @@ def main(outfile_path: Path | None, infile_path: Path) -> Result:
         with outfile_path.open("w") as outfile:
             write_config(update_config(config, operations), outfile)
 
-    return result
+        outfile_post_checksum = get_checksum(outfile_path)
+
+        return (
+            Result.PASSING
+            if outfile_pre_checksum == outfile_post_checksum
+            else Result.FAILING
+        )
+
+    return Result.PASSING if len(operations) == 0 else Result.FAILING

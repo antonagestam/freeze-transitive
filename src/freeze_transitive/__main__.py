@@ -29,6 +29,9 @@ if __name__ == "__main__":
     outfile_path: Path = args.outfile.resolve()
     infile_path: Path = args.infile.resolve()
 
+    print(f"Outfile: {str(outfile_path)!r}", file=sys.stderr)
+    print(f"Infile: {str(infile_path)!r}", file=sys.stderr)
+
     try:
         result = api.main(outfile_path, infile_path)
     except UserError as exc:

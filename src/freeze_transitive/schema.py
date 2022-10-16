@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from typing import NewType
 from typing import TypeVar
 
+from .errors import LocalRepo
 from .parsers import parse
 from .parsers import take
 from .parsers import take_sequence
@@ -45,8 +46,13 @@ class Repo:
     def parse(cls: type[RepoSelf], unknown: object) -> RepoSelf:
         data = parse(unknown, dict)
         hooks_data = take(data, list, "hooks")
+        repo = take(data, str, "repo")
+
+        if repo == "local":
+            raise LocalRepo
+
         return cls(
-            repo=take(data, str, "repo"),
+            repo=repo,
             rev=take(data, str, "rev"),
             hooks=tuple(Hook.parse(hook_data) for hook_data in hooks_data),
         )
