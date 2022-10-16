@@ -10,6 +10,7 @@ from .parsers import take
 from .parsers import take_sequence
 
 FQN = NewType("FQN", str)
+Checksum = NewType("Checksum", str)
 
 # todo: Use typing_extensions.Self when implemented in mypy.
 HookSelf = TypeVar("HookSelf", bound="Hook")

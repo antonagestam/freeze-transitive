@@ -16,3 +16,7 @@ class NoPython(RuntimeError):
 
 class LocalRepo(Exception):
     ...
+
+
+class CacheMiss(RuntimeError):
+    ...

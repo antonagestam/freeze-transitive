@@ -22,18 +22,23 @@ parser.add_argument(
     type=Path,
     default=Path.cwd() / ".pre-commit-config.yaml",
 )
-
+parser.add_argument(
+    "--exclude-dependency",
+    type=str,
+    default=None,
+)
 
 if __name__ == "__main__":
     args = parser.parse_args()
     outfile_path: Path = args.outfile.resolve()
     infile_path: Path = args.infile.resolve()
+    exclude_dependency: str | None = args.exclude_dependency
 
     print(f"Outfile: {str(outfile_path)!r}", file=sys.stderr)
     print(f"Infile: {str(infile_path)!r}", file=sys.stderr)
 
     try:
-        result = api.main(outfile_path, infile_path)
+        result = api.main(outfile_path, infile_path, exclude_dependency)
     except UserError as exc:
         print(f"{exc.__class__.__qualname__}: {exc}", file=sys.stderr)
         result = Result.ERROR

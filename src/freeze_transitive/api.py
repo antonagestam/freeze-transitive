@@ -15,6 +15,7 @@ from typing import TextIO
 
 import yaml
 
+from . import state_cache
 from .errors import ConfigError
 from .errors import LocalRepo
 from .errors import NoPython
@@ -22,6 +23,7 @@ from .parsers import parse
 from .parsers import take
 from .schema import FQN
 from .schema import Append
+from .schema import Checksum
 from .schema import Hook
 from .schema import Repo
 from .schema import Result
@@ -110,7 +112,10 @@ def get_python_path(repo_path: Path) -> Path:
     raise NoPython
 
 
-def generate_operations(config: ParsedConfig) -> Iterator[Append]:
+def generate_operations(
+    config: ParsedConfig,
+    exclude_dependency: str | None,
+) -> Iterator[Append]:
     for repo, hook, fqn in get_unique_hooks(config):
         path = get_repo_path(fqn, repo.rev)
 
@@ -124,6 +129,10 @@ def generate_operations(config: ParsedConfig) -> Iterator[Append]:
             dependency
             for dependency in pip_freeze(python_path)
             if dependency not in hook.additional_dependencies
+            and (
+                exclude_dependency is not None
+                and not dependency.startswith(f"{exclude_dependency}=")
+            )
         )
 
         if missing_entries:
@@ -195,19 +204,30 @@ def write_config(config: ParsedConfig, outfile: TextIO) -> None:
     yaml.dump(config, outfile)
 
 
-Checksum = NewType("Checksum", str)
-
-
 def get_checksum(path: Path) -> Checksum:
     return Checksum(hashlib.sha512(path.read_bytes()).hexdigest())
 
 
-def main(outfile_path: Path | None, infile_path: Path) -> Result:
+def main(
+    outfile_path: Path | None,
+    infile_path: Path,
+    exclude_dependency: str | None,
+) -> Result:
     outfile_pre_checksum = (
         get_checksum(outfile_path) if outfile_path is not None else None
     )
+    state_checksum = f"{get_checksum(infile_path)}-{exclude_dependency=}"
+
+    if outfile_pre_checksum and state_cache.compare(
+        outfile_pre_checksum, state_checksum
+    ):
+        print(
+            "Found cache match for current state, skipping processing", file=sys.stderr
+        )
+        return Result.PASSING
+
     config = parse_config(infile_path)
-    operations = tuple(generate_operations(config))
+    operations = tuple(generate_operations(config, exclude_dependency))
 
     if outfile_path is not None:
         with outfile_path.open("w") as outfile:
@@ -215,10 +235,10 @@ def main(outfile_path: Path | None, infile_path: Path) -> Result:
 
         outfile_post_checksum = get_checksum(outfile_path)
 
-        return (
-            Result.PASSING
-            if outfile_pre_checksum == outfile_post_checksum
-            else Result.FAILING
-        )
+        if outfile_pre_checksum == outfile_post_checksum:
+            state_cache.write(outfile_post_checksum, state_checksum)
+            return Result.PASSING
+
+        return Result.FAILING
 
     return Result.PASSING if len(operations) == 0 else Result.FAILING
