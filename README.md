@@ -1,4 +1,6 @@
-# Setup
+<h1 align=center>freeze-transitive</h1>
+
+### Setup
 
 Add the freeze-transitive hook to you pre-commit configuration.
 
