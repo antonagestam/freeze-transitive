@@ -14,7 +14,7 @@ repos:
 
 Copy your pre-commit configuration to a template file. From now on
 `.pre-commit-hooks.yaml` acts as a lockfile and you should make no manual edits to it,
-instead make edits in `.pre-commit-template.yaml. Both files should be checked into
+instead make edits in `.pre-commit-template.yaml`. Both files should be checked into
 version control.
 
 ```sh
@@ -28,7 +28,7 @@ transitive dependencies pinned.
 $ pre-commit run --all-files
 ```
 
-To run autoupdate, you need to point pre-commit at the template file:
+To run autoupdate, you need to point pre-commit at the template file.
 
 ```sh
 $ pre-commit autoupdate --config=.pre-commit-template.yaml

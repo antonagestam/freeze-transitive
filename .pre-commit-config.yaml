@@ -118,11 +118,11 @@ repos:
   rev: v2.7.1
 - hooks:
   - additional_dependencies:
-    - setuptools==65.5.0
     - build==0.8.0
     - packaging==21.3
     - pep517==0.13.0
     - pyparsing==3.0.9
+    - setuptools==65.5.0
     - tomli==2.0.1
     args:
     - --no-build-isolation

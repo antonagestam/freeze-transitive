@@ -27,18 +27,23 @@ parser.add_argument(
     type=str,
     default=None,
 )
+parser.add_argument(
+    "--no-cache",
+    action="store_true",
+)
 
 if __name__ == "__main__":
     args = parser.parse_args()
     outfile_path: Path = args.outfile.resolve()
     infile_path: Path = args.infile.resolve()
     exclude_dependency: str | None = args.exclude_dependency
+    use_cache: bool = not args.no_cache
 
     print(f"Outfile: {str(outfile_path)!r}", file=sys.stderr)
     print(f"Infile: {str(infile_path)!r}", file=sys.stderr)
 
     try:
-        result = api.main(outfile_path, infile_path, exclude_dependency)
+        result = api.main(outfile_path, infile_path, exclude_dependency, use_cache)
     except UserError as exc:
         print(f"{exc.__class__.__qualname__}: {exc}", file=sys.stderr)
         result = Result.ERROR

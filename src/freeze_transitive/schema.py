@@ -67,7 +67,7 @@ class Result(enum.Enum):
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
-class Append:
+class Replace:
     repo: Repo
     hook: Hook
-    value: str
+    dependencies: tuple[str, ...]

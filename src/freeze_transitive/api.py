@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import copy
 import hashlib
+import re
 import sqlite3
 import subprocess
 import sys
@@ -10,7 +11,7 @@ from collections.abc import Iterator
 from functools import cache
 from pathlib import Path
 from sqlite3 import Cursor
-from typing import NewType
+from typing import NewType, Sequence, Final
 from typing import TextIO
 
 import yaml
@@ -22,7 +23,7 @@ from .errors import NoPython
 from .parsers import parse
 from .parsers import take
 from .schema import FQN
-from .schema import Append
+from .schema import Replace
 from .schema import Checksum
 from .schema import Hook
 from .schema import Repo
@@ -115,40 +116,53 @@ def get_python_path(repo_path: Path) -> Path:
 def generate_operations(
     config: ParsedConfig,
     exclude_dependency: str | None,
-) -> Iterator[Append]:
+) -> Iterator[Replace]:
     for repo, hook, fqn in get_unique_hooks(config):
         path = get_repo_path(fqn, repo.rev)
 
         try:
             python_path = get_python_path(path)
         except NoPython:
-            print(f"Missing pip path for {hook.id}", file=sys.stderr)
+            print(f"Missing Python path for {hook.id}", file=sys.stderr)
             continue
 
-        missing_entries = sorted(
+        dependencies = tuple(
             dependency
             for dependency in pip_freeze(python_path)
-            if dependency not in hook.additional_dependencies
-            and (
+            if (
                 exclude_dependency is not None
                 and not dependency.startswith(f"{exclude_dependency}=")
             )
         )
 
-        if missing_entries:
-            print(f"Missing entries for {hook.id}:", file=sys.stderr)
-            for dependency in missing_entries:
-                print(f"- {dependency!r}", file=sys.stderr)
-                yield Append(
-                    repo=repo,
-                    hook=hook,
-                    value=dependency,
-                )
-        else:
-            print(f"{hook.id}: OK!", file=sys.stderr)
+        if not dependencies:
+            continue
+
+        yield Replace(repo=repo, hook=hook, dependencies=dependencies)
 
 
-def update_config(config: ParsedConfig, operations: Iterable[Append]) -> ParsedConfig:
+version_pattern: Final = re.compile(r"^(?P<name>[\w\-_]+)[<>=]{2}.*$")
+
+
+def index_dependencies(dependencies: Iterable[str]) -> dict[str, str]:
+    return {
+        match.group("name"): dependency
+        for dependency in dependencies
+        if (match := version_pattern.fullmatch(dependency))
+    }
+
+
+def merge_dependencies(first_hand: Sequence[str], frozen: Sequence[str]) -> Iterable[str]:
+    indexed_first_hand = index_dependencies(first_hand)
+    indexed_frozen = index_dependencies(frozen)
+
+    for name, dependency in indexed_first_hand.items():
+        if name not in indexed_frozen:
+            yield dependency
+    yield from frozen
+
+
+def update_config(config: ParsedConfig, operations: Iterable[Replace]) -> ParsedConfig:
     config = copy.deepcopy(config)
     repos = take(config, list, "repos")
 
@@ -179,19 +193,11 @@ def update_config(config: ParsedConfig, operations: Iterable[Append]) -> ParsedC
                 f"{operation.repo.rev=} {operation.hook.id=}"
             )
 
-        # todo: Replace the Append operation with a Replace operation, no need to
-        #  respect dependencies already in additional_dependencies.
         assert isinstance(hook, dict)
-        hook["additional_dependencies"] = [
-            # Remove unpinned dependencies.
-            *(
-                dependency
-                for dependency in hook.get("additional_dependencies", ())
-                if "==" in dependency
-            ),
-            # Add the new pinned dependency.
-            operation.value,
-        ]
+        hook["additional_dependencies"] = sorted(merge_dependencies(
+            first_hand=hook.get("additional_dependencies", ()),
+            frozen=operation.dependencies
+        ))
 
     return config
 
@@ -212,13 +218,14 @@ def main(
     outfile_path: Path | None,
     infile_path: Path,
     exclude_dependency: str | None,
+    use_cache: bool,
 ) -> Result:
     outfile_pre_checksum = (
         get_checksum(outfile_path) if outfile_path is not None else None
     )
     state_checksum = f"{get_checksum(infile_path)}-{exclude_dependency=}"
 
-    if outfile_pre_checksum and state_cache.compare(
+    if use_cache and outfile_pre_checksum and state_cache.compare(
         outfile_pre_checksum, state_checksum
     ):
         print(

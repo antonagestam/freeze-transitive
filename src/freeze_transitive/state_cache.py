@@ -4,6 +4,7 @@ from pathlib import Path
 from sqlite3 import Connection
 
 from freeze_transitive.errors import CacheMiss
+from freeze_transitive import __version__
 
 
 def _create_table(connection: Connection) -> None:
@@ -11,12 +12,13 @@ def _create_table(connection: Connection) -> None:
     cursor.execute(
         """\
         CREATE TABLE IF NOT EXISTS state_cache (
-            key TEXT NOT NULL PRIMARY KEY,
-            value TEXT NOT NULL
+            version TEXT NOT NULL,
+            key TEXT NOT NULL,
+            value TEXT NOT NULL,
+            PRIMARY KEY (version, key)
         );
         """
     )
-    ...
 
 
 @cache
@@ -34,12 +36,12 @@ def write(key: str, value: str) -> None:
     cursor = connection.cursor()
     cursor.execute(
         """\
-        INSERT INTO state_cache (key, value)
-        VALUES (?, ?)
-        ON CONFLICT(key) DO UPDATE SET
+        INSERT INTO state_cache (version, key, value)
+        VALUES (?, ?, ?)
+        ON CONFLICT(version, key) DO UPDATE SET
             value=excluded.value;
         """,
-        (key, value),
+        (__version__, key, value),
     )
     connection.commit()
 
@@ -49,10 +51,10 @@ def read(key: str) -> str:
     result = cursor.execute(
         """\
         SELECT value FROM state_cache
-        WHERE key = ?
+        WHERE version = ? AND key = ?
         LIMIT 1
         """,
-        (key,),
+        (__version__, key,),
     )
     row = result.fetchone()
     if row is None:
