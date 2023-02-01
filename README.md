@@ -30,8 +30,13 @@ transitive dependencies pinned.
 $ pre-commit run --all-files
 ```
 
-To run autoupdate, you need to point pre-commit at the template file.
+### Auto update
+
+To run `autoupdate`, you need to point pre-commit at the template file, replace the
+existing lockfile, and generate a new lockfile by running `freeze-transitive`.
 
 ```sh
 $ pre-commit autoupdate --config=.pre-commit-template.yaml
+$ cp .pre-commit-template.yaml .pre-commit-config.yaml
+$ pre-commit run --all-files
 ```
