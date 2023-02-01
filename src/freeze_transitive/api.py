@@ -22,6 +22,7 @@ from . import state_cache
 from .errors import ConfigError
 from .errors import LocalRepo
 from .errors import NoPython
+from .errors import NoRepo
 from .parsers import parse
 from .parsers import take
 from .schema import FQN
@@ -49,7 +50,11 @@ def get_repo_path(fqn: FQN, revision: str) -> Path:
         """,
         (fqn, revision),
     )
-    (path,) = result.fetchone()
+    row = result.fetchone()
+    try:
+        (path,) = row
+    except TypeError as exception:
+        raise NoRepo(f"Missing repository for {fqn=} {revision=}") from exception
     return Path(path)
 
 

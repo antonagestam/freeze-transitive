@@ -14,6 +14,10 @@ class NoPython(RuntimeError):
     ...
 
 
+class NoRepo(RuntimeError):
+    ...
+
+
 class LocalRepo(Exception):
     ...
 
